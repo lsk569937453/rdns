@@ -1,0 +1,23 @@
+port: 4325
+
+upstream_servers:
+  - "223.5.5.5:53"
+  - "8.8.8.8:53"
+  - "1.1.1.1:53"
+
+records:
+  "example.com.":
+    type: "A"
+    value: "127.0.0.1"
+
+  "www.example.com.":
+    type: "CNAME"
+    value: "example.com."
+
+  "localhost.":
+    type: "A"
+    value: "127.0.0.1"
+
+  "ipv6.example.com.":
+    type: "AAAA"
+    value: "::1"

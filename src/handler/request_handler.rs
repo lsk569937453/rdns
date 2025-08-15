@@ -1,4 +1,5 @@
 use async_trait::async_trait;
+use futures::future::select_all;
 use futures_util::StreamExt;
 use hickory_client::client::Client;
 use hickory_proto::DnsHandle;
@@ -14,10 +15,9 @@ use std::iter;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
-// 自定义请求处理器
 pub struct MyRequestHandler {
     pub records: Arc<HashMap<Name, RData>>,
-    pub forwarder: Client,
+    pub forwarders: Arc<Vec<(String, Client)>>,
 }
 const QUERY_TIMEOUT: Duration = Duration::from_secs(5);
 
@@ -66,7 +66,6 @@ impl RequestHandler for MyRequestHandler {
                 if records.is_empty() {
                     header.set_response_code(ResponseCode::NXDomain);
                 }
-                // 创建一个拥有的 Response
                 let response = MessageResponseBuilder::from_message_request(request).build(
                     header,
                     &records,
@@ -130,30 +129,44 @@ impl MyRequestHandler {
         }
     }
 
+    /// 使用并发查询策略的新 handle_forwarding
     async fn handle_forwarding(&self, query: Query) -> Result<Vec<Record>, anyhow::Error> {
         info!(
-            "Record not found locally, forwarding query: {}",
+            "Record not found locally, forwarding query to all upstreams: {}",
             query.name()
         );
-        let mut response = self.forwarder.lookup(query, Default::default());
-        let mut all_records = Vec::new();
 
-        while let Some(response) = response.next().await {
-            let dns_response = response?;
-            let message = dns_response.into_message();
-            let answers_slice = message.answers();
-            for answer_record in answers_slice {
-                all_records.push(answer_record.clone());
+        let lookups = self.forwarders.iter().map(|(addr, client)| {
+            let client = client.clone();
+            let query = query.clone();
+            let addr = addr.clone();
+
+            Box::pin(async move {
+                let result = client.lookup(query, Default::default()).next().await;
+                (addr, result)
+            })
+        });
+
+        let ((fastest_server_addr, first_result), _, _) = select_all(lookups).await;
+        let res = first_result.ok_or(anyhow!("All upstream servers returned an error."))?;
+        match res {
+            Ok(dns_response) => {
+                info!(
+                    "Got fastest response from upstream server: {}",
+                    fastest_server_addr
+                );
+                let message = dns_response.into_message();
+                let answers = message.answers().to_vec();
+                if answers.is_empty() && message.response_code() == ResponseCode::NoError {
+                    info!("Fastest response was an empty answer, treating as NXDomain.");
+                }
+                Ok(answers)
             }
+            Err(e) => Err(anyhow::anyhow!(
+                "The fastest responding server ({}) returned an error: {}",
+                fastest_server_addr,
+                e
+            )),
         }
-
-        let mut unique_records = Vec::new();
-        for record in all_records {
-            if !unique_records.contains(&record) {
-                unique_records.push(record);
-            }
-        }
-
-        Ok(unique_records)
     }
 }
