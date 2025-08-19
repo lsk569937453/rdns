@@ -117,19 +117,47 @@ impl MyRequestHandler {
     }
 
     fn handle_local_record(&self, query: &Query) -> Result<Vec<Record>, anyhow::Error> {
-        if let Some(rdata) = self.records.get(query.name()) {
-            if query.query_type() == rdata.record_type() || query.query_type() == RecordType::ANY {
-                let record = Record::from_rdata(query.name().clone(), 3600, rdata.clone());
-                Ok(vec![record])
-            } else {
-                Err(anyhow::anyhow!("Name matches but type mismatch"))
+        let mut final_records = Vec::new();
+        let mut current_name = query.name().clone();
+        let mut recursion_limit = 10;
+
+        loop {
+            if recursion_limit == 0 {
+                return Err(anyhow::anyhow!("CNAME recursion limit reached"));
             }
-        } else {
-            Err(anyhow::anyhow!("Record not found locally"))
+            recursion_limit -= 1;
+
+            let rdata = self
+                .records
+                .get(&current_name)
+                .ok_or_else(|| anyhow::anyhow!("Record for {} not found locally", current_name))?;
+
+            let record = Record::from_rdata(current_name.clone(), 3600, rdata.clone());
+            final_records.push(record);
+
+            match rdata {
+                RData::CNAME(cname)
+                    if matches!(query.query_type(), RecordType::A | RecordType::AAAA) =>
+                {
+                    current_name = cname.0.clone();
+                }
+
+                _ if rdata.record_type() == query.query_type() => {
+                    return Ok(final_records);
+                }
+
+                _ => {
+                    return Err(anyhow::anyhow!(
+                        "Found a record for {} but its type ({:?}) does not match the final query type ({:?})",
+                        current_name,
+                        rdata.record_type(),
+                        query.query_type()
+                    ));
+                }
+            }
         }
     }
 
-    /// 使用并发查询策略的新 handle_forwarding
     async fn handle_forwarding(&self, query: Query) -> Result<Vec<Record>, anyhow::Error> {
         info!(
             "Record not found locally, forwarding query to all upstreams: {}",
