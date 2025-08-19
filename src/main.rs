@@ -1,5 +1,6 @@
 mod config;
 mod handler;
+mod plugins;
 use crate::config::cli::Cli;
 use crate::config::config::Config;
 use crate::handler::request_handler::MyRequestHandler;
