@@ -2,7 +2,7 @@ use serde::Deserialize;
 use std::collections::HashMap;
 
 /// 顶层配置结构，对应整个 YAML 文件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub global: Global,
     pub pipeline: Vec<String>,
@@ -50,14 +50,14 @@ pub enum LogLevel {
 }
 
 /// fast_forward: 请求转发插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct FastForward {
     pub upstreams: Vec<String>,
     pub strategy: ForwardStrategy,
 }
 
 /// 转发策略枚举
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum ForwardStrategy {
     Random,
@@ -130,7 +130,7 @@ pub struct Hosts {
 }
 
 /// 用于处理 hosts 中可能是单个 IP 或多个 IP 列表的情况
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(untagged)]
 pub enum HostRecord {
     Single(String),
@@ -138,7 +138,7 @@ pub enum HostRecord {
 }
 
 /// blackhole: 黑洞/屏蔽插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Blackhole {
     pub enabled: bool,
     pub strategy: BlackholeStrategy,
@@ -148,7 +148,7 @@ pub struct Blackhole {
 }
 
 /// 屏蔽策略枚举
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "snake_case")]
 pub enum BlackholeStrategy {
     Drop,

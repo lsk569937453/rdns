@@ -16,7 +16,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 pub struct PipelineHandler {
     pub plugins: Vec<Box<dyn Plugin>>,
-    pub config: Arc<Config>,
+    pub config: Config,
 }
 
 // 需要手动实现，因为 Box<dyn Plugin> 不是 Clone
@@ -28,7 +28,7 @@ impl Clone for PipelineHandler {
         // 为了简化示例，我们暂时忽略这个问题。
         // let plugins = self.plugins.iter().map(|p| dyn_clone::clone_box(&**p)).collect();
         PipelineHandler {
-            plugins: create_plugins(&self.config), // 重新创建
+            plugins: create_plugins(self.config.clone()), // 重新创建
             config: self.config.clone(),
         }
     }

@@ -59,8 +59,9 @@ pub fn create_plugins(config: Config) -> Vec<Box<dyn Plugin>> {
                 }
             }
             "fast_forward" => {
-                if let Some(conf) = config.fast_forward {
-                    plugins.push(Box::new(FastForwardPlugin::new(conf)));
+                if let Some(ref conf) = config.fast_forward {
+                    plugins.push(Box::new(FastForwardPlugin::new(conf.clone())));
+
                     info!("Plugin enabled: fast_forward");
                 }
             }
