@@ -1,5 +1,6 @@
 use super::plugin::{Plugin, PluginAction};
 use crate::config::new_config::Cache as RCache;
+use crate::impl_plugin_as_any;
 use async_trait::async_trait;
 use hickory_proto::op::ResponseCode;
 use hickory_proto::{
@@ -57,16 +58,16 @@ impl Plugin for CachePlugin {
     fn name(&self) -> &'static str {
         "cache"
     }
+    impl_plugin_as_any!();
+
     async fn handle_request(&self, request: Message) -> Result<PluginAction, ResponseCode> {
         let query = request.query().ok_or(ResponseCode::ServFail)?;
         if let Some(entry) = self.cache.get(query) {
-            // 检查条目是否已过期
             if entry.expires_at > Instant::now() {
                 info!("Cache HIT for {}", query.name());
-
                 return Ok(PluginAction::Response(entry.message));
             } else {
-                // 条目已过期，从缓存中移除
+                info!("Cache EXPIRED for {}", query.name());
                 self.cache.invalidate(query);
             }
         }

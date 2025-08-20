@@ -1,5 +1,6 @@
 use super::plugin::{Plugin, PluginAction};
 use crate::config::new_config::FastForward;
+use crate::impl_plugin_as_any;
 use async_trait::async_trait;
 use futures::future::select_all;
 use futures_util::StreamExt;
@@ -132,6 +133,8 @@ impl Plugin for FastForwardPlugin {
     fn name(&self) -> &'static str {
         "FastForward"
     }
+    impl_plugin_as_any!();
+
     async fn handle_request(&self, request: Message) -> Result<PluginAction, ResponseCode> {
         let query = request.query().ok_or(ResponseCode::ServFail)?;
         info!(
@@ -165,7 +168,10 @@ impl Plugin for FastForwardPlugin {
                 }
                 Ok(PluginAction::Response(answers))
             }
-            Err(e) => Err(ResponseCode::ServFail),
+            Err(e) => {
+                error!("Error during lookup: {}", e);
+                Err(ResponseCode::ServFail)
+            }
         }
     }
 }

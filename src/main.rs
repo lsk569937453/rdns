@@ -51,7 +51,7 @@ fn setup_logger() -> Result<(), anyhow::Error> {
 
     tracing_subscriber::registry()
         .with(file_layer)
-        .with(tracing_subscriber::filter::LevelFilter::INFO)
+        .with(tracing_subscriber::filter::LevelFilter::TRACE)
         .init();
 
     Ok(())

@@ -7,6 +7,7 @@ use async_trait::async_trait;
 use hickory_proto::op::Message;
 use hickory_proto::op::ResponseCode;
 use hickory_proto::rr::Record;
+use std::any::Any;
 /// 插件处理请求后的动作
 pub enum PluginAction {
     /// 插件已生成响应，流水线应终止
@@ -21,8 +22,16 @@ pub type PluginOutput = anyhow::Result<Option<Message>>;
 pub trait Plugin: Send + Sync {
     fn name(&self) -> &'static str;
     async fn handle_request(&self, request: Message) -> Result<PluginAction, ResponseCode>;
+    fn as_any(&self) -> &dyn Any;
 }
-
+#[macro_export]
+macro_rules! impl_plugin_as_any {
+    () => {
+        fn as_any(&self) -> &dyn ::std::any::Any {
+            self
+        }
+    };
+}
 /// 根据配置创建插件实例的工厂函数
 pub async fn create_plugins(config: Config) -> Vec<Box<dyn Plugin>> {
     let mut plugins: Vec<Box<dyn Plugin>> = Vec::new();

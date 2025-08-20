@@ -10,7 +10,6 @@ use hickory_proto::rr::Record;
 use hickory_server::authority::MessageResponseBuilder;
 use hickory_server::server::ResponseInfo;
 use hickory_server::server::{Request, RequestHandler, ResponseHandler};
-use std::any::Any;
 use std::iter;
 pub struct PipelineHandler {
     pub plugins: Vec<Box<dyn Plugin>>,
@@ -48,9 +47,16 @@ impl RequestHandler for PipelineHandler {
 }
 impl PipelineHandler {
     async fn store_cache(&self, query: Query, records: Vec<Record>) {
+        info!("start store cache");
         for plugin in &self.plugins {
-            if let Some(cache_plugin) = (plugin as &dyn Any).downcast_ref::<CachePlugin>() {
-                cache_plugin.store(query, records).await;
+            info!("plugin name: {}", plugin.name());
+            if let Some(cache_plugin) = plugin.as_any().downcast_ref::<CachePlugin>() {
+                info!(
+                    "Cache plugin found, storing records for query: {}",
+                    query.name()
+                );
+                cache_plugin.store(query.clone(), records).await;
+                info!("Cache plugin stored records for query: {}", query.name());
                 break;
             }
         }
@@ -80,7 +86,7 @@ impl PipelineHandler {
                     let mut header = Header::response_from_request(request.header());
 
                     // 插件生成了最终响应，流水线终止。
-                    tracing::debug!("Plugin '{}' generated a final response.", plugin.name());
+                    debug!("Plugin '{}' generated a final response.", plugin.name());
                     info!("Query successful, found {} records", records.len());
                     if records.is_empty() {
                         header.set_response_code(ResponseCode::NXDomain);

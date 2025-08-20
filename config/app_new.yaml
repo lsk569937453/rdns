@@ -32,7 +32,7 @@ fast_forward:
     - "tls://dns.alidns.com"
     - "https://dns.alidns.com/dns-query"
   # 转发策略, 可选: "random", "round_robin", "fastest"
-  strategy: "random"
+  strategy: "fastest"
 
 # cache: 缓存插件
 cache:
