@@ -1,10 +1,8 @@
-use super::plugin::{Plugin, PluginAction, create_error_response};
-use crate::config;
+use super::plugin::{Plugin, PluginAction};
 use crate::config::new_config::Blackhole;
 use crate::config::new_config::BlackholeStrategy;
 use async_trait::async_trait;
 use hickory_proto::op::{Message, ResponseCode};
-use hickory_server::server::Request;
 use std::collections::HashSet;
 pub struct BlackholePlugin {
     config: Blackhole,
@@ -23,7 +21,6 @@ impl Plugin for BlackholePlugin {
     fn name(&self) -> &'static str {
         "blackhole"
     }
-
     async fn handle_request(&self, request: Message) -> Result<PluginAction, ResponseCode> {
         let name_str = request
             .query()

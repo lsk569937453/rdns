@@ -4,7 +4,8 @@ use std::collections::HashMap;
 /// 顶层配置结构，对应整个 YAML 文件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
-    pub global: Global,
+    pub port: i32,
+    pub log_level: LogLevel,
     pub pipeline: Vec<String>,
 
     // 插件具体配置
@@ -31,15 +32,8 @@ pub struct Config {
     pub prefer_ipv6: PreferIpv6,
 }
 
-/// 全局设置
-#[derive(Debug, Deserialize)]
-pub struct Global {
-    pub listen_address: String,
-    pub log_level: LogLevel,
-}
-
 /// 日志级别枚举
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum LogLevel {
     Trace,
@@ -92,19 +86,19 @@ pub struct RedisConfig {
 }
 
 /// _prefer_ipv4: IPv4 偏好插件
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct PreferIpv4 {
     pub enabled: bool,
 }
 
 /// _prefer_ipv6: IPv6 偏好插件
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct PreferIpv6 {
     pub enabled: bool,
 }
 
 /// ecs: EDNS Client Subnet 插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Ecs {
     pub enabled: bool,
     pub strategy: EcsStrategy,
@@ -114,7 +108,7 @@ pub struct Ecs {
 }
 
 /// ECS 添加策略枚举
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum EcsStrategy {
     Auto,
@@ -157,35 +151,35 @@ pub enum BlackholeStrategy {
 }
 
 /// ttl: TTL 修改插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Ttl {
     pub enabled: bool,
     pub rules: HashMap<String, u32>,
 }
 
 /// redirect: 请求重定向插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Redirect {
     pub enabled: bool,
     pub rules: HashMap<String, String>,
 }
 
 /// padding: EDNS(0) Padding 插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Padding {
     pub enabled: bool,
     pub block_size: u16,
 }
 
 /// bufsize: EDNS(0) UDP Buffer Size 修改插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Bufsize {
     pub enabled: bool,
     pub size: u16,
 }
 
 /// arbitrary: 高级自定义应答插件
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct Arbitrary {
     pub enabled: bool,
     #[serde(default)]
@@ -193,7 +187,7 @@ pub struct Arbitrary {
 }
 
 /// 高级自定义应答规则
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ArbitraryRule {
     pub domain: String,
     pub qtype: String,
@@ -202,7 +196,7 @@ pub struct ArbitraryRule {
 }
 
 /// reverse_lookup: 反向查询插件
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct ReverseLookup {
     pub enabled: bool,
     pub http_api: HttpApiConfig,
@@ -210,20 +204,20 @@ pub struct ReverseLookup {
 }
 
 /// 反向查询的 HTTP API 配置
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct HttpApiConfig {
     pub enabled: bool,
     pub listen_address: String,
 }
 
 /// 反向查询的 PTR 查询配置
-#[derive(Debug, Deserialize, Default)]
+#[derive(Debug, Deserialize, Default, Clone)]
 pub struct PtrLookupConfig {
     pub enabled: bool,
 }
 
 /// client_limiter: 客户端请求频率限制插件
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ClientLimiter {
     pub enabled: bool,
     pub max_qps: u32,

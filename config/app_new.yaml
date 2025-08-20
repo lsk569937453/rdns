@@ -1,9 +1,7 @@
 # MosDNS-like DNS Proxy 配置文件 (Rust版)
 
-# 全局设置
-global:
-  listen_address: "0.0.0.0:53" # DNS 服务监听地址和端口
-  log_level: "info" # 日志级别, 可选: "trace", "debug", "info", "warn", "error"
+port: 4325 # DNS 服务监听地址和端口
+log_level: "info" # 日志级别, 可选: "trace", "debug", "info", "warn", "error"
 
 # 核心处理流程
 # 定义插件的执行顺序。请求将按照这个列表的顺序依次通过每个插件。
@@ -31,8 +29,8 @@ fast_forward:
   upstreams:
     - "8.8.8.8:53"
     - "1.1.1.1:53"
-    - "tls://dns.google"
-    - "https://cloudflare-dns.com/dns-query"
+    - "tls://dns.alidns.com"
+    - "https://dns.alidns.com/dns-query"
   # 转发策略, 可选: "random", "round_robin", "fastest"
   strategy: "random"
 

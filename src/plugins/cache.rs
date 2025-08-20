@@ -1,5 +1,4 @@
 use super::plugin::{Plugin, PluginAction};
-use crate::config;
 use crate::config::new_config::Cache as RCache;
 use async_trait::async_trait;
 use hickory_proto::op::ResponseCode;
@@ -7,7 +6,6 @@ use hickory_proto::{
     op::{Message, Query},
     rr::Record,
 };
-use hickory_server::server::Request;
 use moka::sync::Cache;
 use std::time::{Duration, Instant};
 #[derive(Clone)]
@@ -32,7 +30,7 @@ impl CachePlugin {
 
     /// 将响应存入缓存的方法
     pub async fn store(&self, query: Query, records: Vec<Record>) {
-        if records.len() > 0 {
+        if !records.is_empty() {
             // 找到最小的 TTL
             let min_ttl = records
                 .iter()
@@ -59,10 +57,9 @@ impl Plugin for CachePlugin {
     fn name(&self) -> &'static str {
         "cache"
     }
-
     async fn handle_request(&self, request: Message) -> Result<PluginAction, ResponseCode> {
         let query = request.query().ok_or(ResponseCode::ServFail)?;
-        if let Some(mut entry) = self.cache.get(query) {
+        if let Some(entry) = self.cache.get(query) {
             // 检查条目是否已过期
             if entry.expires_at > Instant::now() {
                 info!("Cache HIT for {}", query.name());

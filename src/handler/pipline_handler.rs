@@ -1,7 +1,7 @@
 use crate::config::new_config::Config;
 use crate::plugins::cache::CachePlugin;
 use crate::plugins::plugin::create_plugins;
-use crate::plugins::plugin::{Plugin, PluginAction, create_error_response};
+use crate::plugins::plugin::{Plugin, PluginAction};
 use async_trait::async_trait;
 use hickory_proto::op::Header;
 use hickory_proto::op::Query;
@@ -12,33 +12,25 @@ use hickory_server::server::ResponseInfo;
 use hickory_server::server::{Request, RequestHandler, ResponseHandler};
 use std::any::Any;
 use std::iter;
-use std::ops::Deref;
-use std::sync::Arc;
 pub struct PipelineHandler {
     pub plugins: Vec<Box<dyn Plugin>>,
     pub config: Config,
 }
-
-// 需要手动实现，因为 Box<dyn Plugin> 不是 Clone
-impl Clone for PipelineHandler {
-    fn clone(&self) -> Self {
-        // 这实际上是不安全的，因为插件可能有内部状态。
-        // 在 hickory v0.24 中，RequestHandler 需要是 Clone
-        // 更好的方法是把插件列表也放入 Arc 中。
-        // 为了简化示例，我们暂时忽略这个问题。
-        // let plugins = self.plugins.iter().map(|p| dyn_clone::clone_box(&**p)).collect();
+impl PipelineHandler {
+    pub async fn new(config: Config) -> Self {
         PipelineHandler {
-            plugins: create_plugins(self.config.clone()), // 重新创建
-            config: self.config.clone(),
+            plugins: create_plugins(config.clone()).await,
+            config,
         }
     }
 }
+
 #[async_trait]
 impl RequestHandler for PipelineHandler {
     async fn handle_request<R: ResponseHandler>(
         &self,
         request: &Request,
-        mut response_handler: R,
+        response_handler: R,
     ) -> ResponseInfo {
         let res = self
             .handle_request_with_error(request, response_handler)
@@ -72,11 +64,11 @@ impl PipelineHandler {
         let query = Query::query(low_query.name().into(), low_query.query_type());
 
         let mut message = Message::new();
-        message.set_header(request.header().clone());
-        message.set_id(request.id().clone());
-        message.set_message_type(request.message_type().clone());
-        message.set_op_code(request.op_code().clone());
-        message.set_recursion_desired(request.recursion_desired().clone());
+        message.set_header(*request.header());
+        message.set_id(request.id());
+        message.set_message_type(request.message_type());
+        message.set_op_code(request.op_code());
+        message.set_recursion_desired(request.recursion_desired());
         message.add_query(query.clone());
         let mut final_response = None;
         for plugin in &self.plugins {

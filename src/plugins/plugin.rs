@@ -7,10 +7,6 @@ use async_trait::async_trait;
 use hickory_proto::op::Message;
 use hickory_proto::op::ResponseCode;
 use hickory_proto::rr::Record;
-use hickory_server::authority::MessageRequest;
-use hickory_server::server::Request;
-use hickory_server::server::RequestInfo;
-use std::sync::Arc;
 /// 插件处理请求后的动作
 pub enum PluginAction {
     /// 插件已生成响应，流水线应终止
@@ -28,39 +24,41 @@ pub trait Plugin: Send + Sync {
 }
 
 /// 根据配置创建插件实例的工厂函数
-pub fn create_plugins(config: Config) -> Vec<Box<dyn Plugin>> {
+pub async fn create_plugins(config: Config) -> Vec<Box<dyn Plugin>> {
     let mut plugins: Vec<Box<dyn Plugin>> = Vec::new();
 
     // 严格按照 pipeline 顺序创建插件
     for name in &config.pipeline {
         match name.as_str() {
             "cache" => {
-                if let Some(ref conf) = config.cache {
-                    if conf.enabled {
-                        plugins.push(Box::new(CachePlugin::new(conf.clone())));
-                        info!("Plugin enabled: cache");
-                    }
+                if let Some(ref conf) = config.cache
+                    && conf.enabled
+                {
+                    plugins.push(Box::new(CachePlugin::new(conf.clone())));
+                    info!("Plugin enabled: cache");
                 }
             }
             "hosts" => {
-                if let Some(ref conf) = config.hosts {
-                    if conf.enabled {
-                        plugins.push(Box::new(HostsPlugin::new(conf.clone())));
-                        info!("Plugin enabled: hosts");
-                    }
+                if let Some(ref conf) = config.hosts
+                    && conf.enabled
+                {
+                    plugins.push(Box::new(HostsPlugin::new(conf.clone())));
+                    info!("Plugin enabled: hosts");
                 }
             }
             "blackhole" => {
-                if let Some(ref conf) = config.blackhole {
-                    if conf.enabled {
-                        plugins.push(Box::new(BlackholePlugin::new(conf.clone())));
-                        info!("Plugin enabled: blackhole");
-                    }
+                if let Some(ref conf) = config.blackhole
+                    && conf.enabled
+                {
+                    plugins.push(Box::new(BlackholePlugin::new(conf.clone())));
+                    info!("Plugin enabled: blackhole");
                 }
             }
             "fast_forward" => {
                 if let Some(ref conf) = config.fast_forward {
-                    plugins.push(Box::new(FastForwardPlugin::new(conf.clone())));
+                    plugins.push(Box::new(
+                        FastForwardPlugin::new(conf.clone()).await.unwrap(),
+                    ));
 
                     info!("Plugin enabled: fast_forward");
                 }
@@ -77,7 +75,7 @@ pub fn create_plugins(config: Config) -> Vec<Box<dyn Plugin>> {
 pub fn create_error_response(request: &Message, code: ResponseCode) -> Message {
     let mut message = Message::new();
     message.set_id(request.id());
-    message.set_header(request.header().clone());
+    message.set_header(*request.header());
     message.set_response_code(code);
     message
 }
