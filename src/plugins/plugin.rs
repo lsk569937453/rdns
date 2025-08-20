@@ -1,4 +1,5 @@
 use crate::config::new_config::Config;
+use crate::plugins::arbitrary::ArbitraryPlugin;
 use crate::plugins::blackhole::BlackholePlugin;
 use crate::plugins::cache::CachePlugin;
 use crate::plugins::fast_forward::FastForwardPlugin;
@@ -40,25 +41,19 @@ pub async fn create_plugins(config: Config) -> Vec<Box<dyn Plugin>> {
     for name in &config.pipeline {
         match name.as_str() {
             "cache" => {
-                if let Some(ref conf) = config.cache
-                    && conf.enabled
-                {
+                if let Some(ref conf) = config.cache {
                     plugins.push(Box::new(CachePlugin::new(conf.clone())));
                     info!("Plugin enabled: cache");
                 }
             }
             "hosts" => {
-                if let Some(ref conf) = config.hosts
-                    && conf.enabled
-                {
+                if let Some(ref conf) = config.hosts {
                     plugins.push(Box::new(HostsPlugin::new(conf.clone())));
                     info!("Plugin enabled: hosts");
                 }
             }
             "blackhole" => {
-                if let Some(ref conf) = config.blackhole
-                    && conf.enabled
-                {
+                if let Some(ref conf) = config.blackhole {
                     plugins.push(Box::new(BlackholePlugin::new(conf.clone())));
                     info!("Plugin enabled: blackhole");
                 }
@@ -70,6 +65,13 @@ pub async fn create_plugins(config: Config) -> Vec<Box<dyn Plugin>> {
                     ));
 
                     info!("Plugin enabled: fast_forward");
+                }
+            }
+            "arbitrary" => {
+                if let Some(ref conf) = config.arbitrary {
+                    plugins.push(Box::new(ArbitraryPlugin::new(conf.clone())));
+
+                    info!("Plugin enabled: arbitrary");
                 }
             }
             _ => {

@@ -1,3 +1,4 @@
+pub mod arbitrary;
 pub mod blackhole;
 pub mod cache;
 pub mod fast_forward;

@@ -24,7 +24,7 @@ pub struct Config {
 
     // 以下插件在 pipeline 中未启用，但仍为其定义结构
     #[serde(default)] // 如果配置文件中没有，则使用默认值
-    pub arbitrary: Arbitrary,
+    pub arbitrary: Option<Arbitrary>,
     #[serde(default)]
     pub reverse_lookup: ReverseLookup,
     #[serde(rename = "_prefer_ipv6")]
@@ -62,7 +62,6 @@ pub enum ForwardStrategy {
 /// cache: 缓存插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Cache {
-    pub enabled: bool,
     pub backend: CacheBackend,
     pub max_size: u64,
     pub ttl_override: bool,
@@ -87,20 +86,15 @@ pub struct RedisConfig {
 
 /// _prefer_ipv4: IPv4 偏好插件
 #[derive(Debug, Deserialize, Default, Clone)]
-pub struct PreferIpv4 {
-    pub enabled: bool,
-}
+pub struct PreferIpv4 {}
 
 /// _prefer_ipv6: IPv6 偏好插件
 #[derive(Debug, Deserialize, Default, Clone)]
-pub struct PreferIpv6 {
-    pub enabled: bool,
-}
+pub struct PreferIpv6 {}
 
 /// ecs: EDNS Client Subnet 插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Ecs {
-    pub enabled: bool,
     pub strategy: EcsStrategy,
     pub preset_ip: Option<String>,
     pub subnet_mask_ipv4: u8,
@@ -118,7 +112,6 @@ pub enum EcsStrategy {
 /// hosts: 静态域名记录插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Hosts {
-    pub enabled: bool,
     #[serde(default)] // 如果 records 字段不存在，则默认为空的 HashMap
     pub records: HashMap<String, HostRecord>,
 }
@@ -134,7 +127,6 @@ pub enum HostRecord {
 /// blackhole: 黑洞/屏蔽插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Blackhole {
-    pub enabled: bool,
     pub strategy: BlackholeStrategy,
     pub custom_ips: Option<Vec<String>>,
     #[serde(default)]
@@ -153,35 +145,30 @@ pub enum BlackholeStrategy {
 /// ttl: TTL 修改插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Ttl {
-    pub enabled: bool,
     pub rules: HashMap<String, u32>,
 }
 
 /// redirect: 请求重定向插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Redirect {
-    pub enabled: bool,
     pub rules: HashMap<String, String>,
 }
 
 /// padding: EDNS(0) Padding 插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Padding {
-    pub enabled: bool,
     pub block_size: u16,
 }
 
 /// bufsize: EDNS(0) UDP Buffer Size 修改插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct Bufsize {
-    pub enabled: bool,
     pub size: u16,
 }
 
 /// arbitrary: 高级自定义应答插件
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct Arbitrary {
-    pub enabled: bool,
     #[serde(default)]
     pub rules: Vec<ArbitraryRule>,
 }
@@ -198,7 +185,6 @@ pub struct ArbitraryRule {
 /// reverse_lookup: 反向查询插件
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct ReverseLookup {
-    pub enabled: bool,
     pub http_api: HttpApiConfig,
     pub ptr_lookup: PtrLookupConfig,
 }
@@ -206,20 +192,16 @@ pub struct ReverseLookup {
 /// 反向查询的 HTTP API 配置
 #[derive(Debug, Deserialize, Default, Clone)]
 pub struct HttpApiConfig {
-    pub enabled: bool,
     pub listen_address: String,
 }
 
 /// 反向查询的 PTR 查询配置
 #[derive(Debug, Deserialize, Default, Clone)]
-pub struct PtrLookupConfig {
-    pub enabled: bool,
-}
+pub struct PtrLookupConfig {}
 
 /// client_limiter: 客户端请求频率限制插件
 #[derive(Debug, Deserialize, Clone)]
 pub struct ClientLimiter {
-    pub enabled: bool,
     pub max_qps: u32,
     pub burst_size: u32,
 }

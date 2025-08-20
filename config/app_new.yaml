@@ -10,6 +10,7 @@ pipeline:
   - client_limiter # 首先进行客户端QPS限制
   - cache # 然后查找缓存
   - hosts # 接着检查 hosts 记录
+  - arbitrary
   - blackhole # 检查是否需要屏蔽
   - redirect # 检查是否需要重定向
   - _prefer_ipv4 # 屏蔽 IPv6 (如果需要)
@@ -36,7 +37,6 @@ fast_forward:
 
 # cache: 缓存插件
 cache:
-  enabled: true
   # 缓存后端类型, 可选: "memory", "redis"
   backend: "memory"
   # 对于 "memory" 后端, 表示最大缓存条目数
@@ -59,7 +59,6 @@ _prefer_ipv6:
 
 # ecs: EDNS Client Subnet 插件
 ecs:
-  enabled: true
   # ECS 添加策略, 可选: "auto", "preset"
   # "auto": 自动使用客户端的源 IP
   # "preset": 使用下面预设的 IP
@@ -70,18 +69,16 @@ ecs:
 
 # hosts: 静态域名记录插件
 hosts:
-  enabled: true
   # 格式: "域名": "IP地址" 或 ["IP地址1", "IP地址2"]
   records:
-    example.com: "192.168.1.1"
-    multi.example.com:
+    example.com.: "192.168.1.1"
+    multi.example.com.:
       - "192.168.1.2"
       - "192.168.1.3"
-    ipv6.example.com: "::1"
+    ipv6.example.com.: "::1"
 
 # blackhole: 黑洞/屏蔽插件
 blackhole:
-  enabled: true
   # 屏蔽策略, 可选: "drop", "empty", "custom_ip"
   # "drop": 直接丢弃应答
   # "empty": 返回空的 NOERROR 应答
@@ -94,7 +91,6 @@ blackhole:
 
 # ttl: TTL 修改插件
 ttl:
-  enabled: true
   # 规则格式: "域名": TTL值(秒)
   # "*" 代表所有域名
   rules:
@@ -103,7 +99,6 @@ ttl:
 
 # redirect: 请求重定向插件
 redirect:
-  enabled: true
   # 格式: "原始请求域名": "目标域名"
   rules:
     google.com: "www.google.com"
@@ -123,28 +118,31 @@ bufsize:
 
 # arbitrary: 高级自定义应答插件
 arbitrary:
-  enabled: false
   # 这是一个高级功能，配置格式可能比较复杂
   rules:
-    - domain: "example.org"
+    - domain: "example.com."
       qtype: "A"
-      value: "10.0.0.1"
-      ttl: 60
-    - domain: "example.org"
-      qtype: "TXT"
-      value: "Hello from my DNS proxy!"
-      ttl: 60
-
+      value: "127.0.0.1"
+      ttl: 60 # 您可以自定义TTL
+    - domain: "www.example.com."
+      qtype: "CNAME"
+      value: "example.com."
+      ttl: 60 # 您可以自定义TTL
+    - domain: "localhost."
+      qtype: "A"
+      value: "127.0.0.1"
+      ttl: 60 # 您可以自定义TTL
+    - domain: "ipv6.example.com."
+      qtype: "AAAA"
+      value: "::1"
+      ttl: 60 # 您可以自定义TTL
 # reverse_lookup: 反向查询插件
 reverse_lookup:
   enabled: false
   http_api:
-    enabled: true
     listen_address: "127.0.0.1:8080"
   ptr_lookup:
-    enabled: true
 
 client_limiter:
-  enabled: true
   max_qps: 100
   burst_size: 20
