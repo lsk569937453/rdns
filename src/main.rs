@@ -20,6 +20,8 @@ use std::net::Ipv4Addr;
 use std::net::SocketAddr;
 use std::sync::Arc;
 use tokio::net::UdpSocket;
+use tracing_appender::non_blocking::NonBlockingBuilder;
+use tracing_appender::non_blocking::WorkerGuard;
 use tracing_appender::rolling;
 use tracing_subscriber::Layer;
 use tracing_subscriber::fmt::time::FormatTime;
@@ -38,23 +40,26 @@ impl FormatTime for ShanghaiTime {
         write!(w, "{}", now_shanghai.format("%Y-%m-%d %H:%M:%S%.3f"))
     }
 }
-fn setup_logger() -> Result<(), anyhow::Error> {
-    let app_file = rolling::daily("./logs", "access.log");
+fn setup_logger() -> Result<WorkerGuard, anyhow::Error> {
+    let file_appender = rolling::daily("./logs", "access.log");
+    let (non_blocking_writer, guard) = NonBlockingBuilder::default()
+        .buffered_lines_limit(1000 * 1000 * 1000)
+        .finish(file_appender);
 
     let file_layer = tracing_subscriber::fmt::Layer::new()
         .with_timer(ShanghaiTime)
         .with_line_number(true)
         .with_target(true)
         .with_ansi(false)
-        .with_writer(app_file)
+        .with_writer(non_blocking_writer)
         .with_filter(tracing_subscriber::filter::LevelFilter::INFO);
 
     tracing_subscriber::registry()
         .with(file_layer)
-        .with(tracing_subscriber::filter::LevelFilter::TRACE)
+        .with(tracing_subscriber::filter::LevelFilter::INFO)
         .init();
 
-    Ok(())
+    Ok(guard)
 }
 #[tokio::main]
 async fn main() {
@@ -122,7 +127,7 @@ async fn main_with_error() -> Result<(), anyhow::Error> {
     Ok(())
 }
 async fn main_with_new() -> Result<(), anyhow::Error> {
-    setup_logger()?;
+    let _guard = setup_logger()?;
     let cli = Cli::parse();
     info!("Loading configuration from: {}", cli.config_file);
     let config_str = tokio::fs::read_to_string(&cli.config_file).await?;

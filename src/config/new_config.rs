@@ -9,7 +9,7 @@ pub struct Config {
     pub pipeline: Vec<String>,
 
     // 插件具体配置
-    pub client_limiter: ClientLimiter,
+    pub client_limiter: Option<ClientLimiterConfig>,
     pub cache: Option<Cache>,
     pub hosts: Option<Hosts>,
     pub blackhole: Option<Blackhole>,
@@ -201,7 +201,7 @@ pub struct PtrLookupConfig {}
 
 /// client_limiter: 客户端请求频率限制插件
 #[derive(Debug, Deserialize, Clone)]
-pub struct ClientLimiter {
+pub struct ClientLimiterConfig {
     pub max_qps: u32,
     pub burst_size: u32,
 }
